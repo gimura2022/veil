@@ -1,0 +1,5 @@
+constexpr std -> mod = @import("std");
+
+impure main args::std.array(std.string) -> void = {
+	std.println("Hello, world!");
+}

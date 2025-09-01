@@ -1,0 +1,51 @@
+export constexpr u8 -> type = @u(8);
+export constexpr u16 -> type = @u(16);
+export constexpr u32 -> type = @u(32);
+export constexpr u64 -> type = @u(64);
+
+export constexpr i8 -> type = @i(8);
+export constexpr i16 -> type = @i(16);
+export constexpr i32 -> type = @i(32);
+export constexpr i64 -> type = @i(64);
+
+export constexpr bool -> type = @u(1);
+
+export operator + a::u8 b::u8 -> u8 = @add(u8);
+export operator + a::u16 b::u16 -> u16 = @add(u16);
+export operator + a::u32 b::u32 -> u32 = @add(u32);
+export operator + a::u64 b::u64 -> u64 = @add(u64);
+
+export operator + a::i8 b::i8 -> i8 = @add(i8);
+export operator + a::i16 b::i16 -> i16 = @add(i16);
+export operator + a::i32 b::i32 -> i32 = @add(i32);
+export operator + a::i64 b::i64 -> i64 = @add(i64);
+
+export operator - a::u8 b::u8 -> u8 = @sub(u8);
+export operator - a::u16 b::u16 -> u16 = @sub(u16);
+export operator - a::u32 b::u32 -> u32 = @sub(u32);
+export operator - a::u64 b::u64 -> u64 = @sub(u64);
+
+export operator - a::i8 b::i8 -> i8 = @sub(i8);
+export operator - a::i16 b::i16 -> i16 = @sub(i16);
+export operator - a::i32 b::i32 -> i32 = @sub(i32);
+export operator - a::i64 b::i64 -> i64 = @sub(i64);
+
+export operator * a::u8 b::u8 -> u8 = @mul(u8);
+export operator * a::u16 b::u16 -> u16 = @mul(u16);
+export operator * a::u32 b::u32 -> u32 = @mul(u32);
+export operator * a::u64 b::u64 -> u64 = @mul(u64);
+
+export operator * a::i8 b::i8 -> i8 = @mul(i8);
+export operator * a::i16 b::i16 -> i16 = @mul(i16);
+export operator * a::i32 b::i32 -> i32 = @mul(i32);
+export operator * a::i64 b::i64 -> i64 = @mul(i64);
+
+export operator / a::u8 b::u8 -> u8 = @div(u8);
+export operator / a::u16 b::u16 -> u16 = @div(u16);
+export operator / a::u32 b::u32 -> u32 = @div(u32);
+export operator / a::u64 b::u64 -> u64 = @div(u64);
+
+export operator / a::i8 b::i8 -> i8 = @div(i8);
+export operator / a::i16 b::i16 -> i16 = @div(i16);
+export operator / a::i32 b::i32 -> i32 = @div(i32);
+export operator / a::i64 b::i64 -> i64 = @div(i64);
