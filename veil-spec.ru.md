@@ -1,4 +1,6 @@
-# Спецификация veil'a
+# Спецификация языка
+В этом разделе говорится непосредственно о языке его синтаксисе
+основам и тому без чего он не заработает.
 
 ## Синтаксис
 В топлевеле должны лежать определения функций которые заканчиваются на ";".
@@ -49,12 +51,16 @@ some_template_funtion(str); // compilation error: type doesn't match requirement
 Ключевое слово check позволяет проверить валидность кода и если в нём не будет ошибок оно вернёт true,
 в противном случаи false. Ключевое слово check имеет такой синтаксис:
 ```
-check (<argument_name::argument_type...>) { <expression(s) to check> }
+check (<argument_name::argument_type...>) {
+    { <expr> } -> (<requirements to return type>),
+}
 ```
 
 Примеры:
 ```
-constexpr custom_limitation T::type -> bool = check (x::T) { x + x };
+constexpr custom_limitation T::type -> bool = check (x::T) {
+    { x + x } -> (same_as(T)),
+};
 ```
 
 ### Тип fn
@@ -106,11 +112,11 @@ impure main args::std.array(str) -> void = ...;
 
 Пример:
 ```
-square x::i32 -> i32 = x * x;
-square2 -> i32 = square(2);
+mul a::i32 b::i32 -> i32 = a * b;
+mul2x2 -> i32 = mul(2, 2);
 
-square(10); // 100
-square2; // 4
+mul(10, 10) // 100
+mul2x2 // 4
 ```
 
 ### Синтаксис лямбды
@@ -308,7 +314,7 @@ or true::bool true::bool -> bool = true;
 Что бы объявить тип структуры необходимо использовать синтаксис:
 ```
 struct {
-    <field_name::field_type...>
+    <field_name::field_type...>,
 }
 ```
 
@@ -316,7 +322,7 @@ struct {
 Структуры можно темплейтировать как и другие типы:
 ```
 constexpr some_struct T::type -> type = struct {
-    some_field::T
+    some_field::T,
 };
 ```
 
@@ -374,4 +380,372 @@ constexpr std -> mod = @import("std");
 include @import("lib");
 
 impure main args::std.array(str) -> void = std.println("10 ** 2 = {}", square(10));
+```
+
+## Конструкции
+Конструкции это к примеру if'ы, циклы и тому подобное.
+
+### Условные конструкции
+Условные конструкции позволяют в зависимости от результата какого то выражения совершать какие либо действия
+
+#### if
+Условная конструкция if имеет такой синтаксис:
+```
+<flags...> if (<expr>) <expr> else <expr>
+```
+
+Для конструкции существуют следующие флаги:
+- constexpr
+- impure
+
+Возможны только следующие комбинации:
+| constexpr | impure | Описание |
+| --- | --- | --- |
+| Нет | Нет | if принимает значение времени выполнения и в любом случаи возвращяет результат с одним типом |
+| Да | Нет | if принимает значение времени компиляции и в любом случаи возвращяет результат с одним типом времени компиляции |
+| Нет | Да | if принимает значение времени выполнения и всегда возвращяет void, может не иметь else блока |
+| Да | Да | if принимает значение времени компиляции и всегда возвращяет void, может не иметь else блока |
+
+#### switch-case
+Условная конструкция switch-case по факту тот же if но который автоматически настроен на сравнивание,
+вот его синтаксис:
+```
+switch (<expr>) {
+    case (<expr>),
+}
+```
+
+### Циклы
+В языке представлены 3 цикла:
+- while
+- do-while
+- for-each
+
+#### Цикл while
+Цикл while принимает некоторое выражение которое возвращяет bool
+и выполняет своё тело пока это выражение является истиной. Цикл всегда возвращяет void,
+и является нечистым.
+Вот его синтаксис:
+```
+while (<expr>) <expr>
+```
+
+#### Цикл do-while
+Цикл do-while делает тоже самое что и while но если выражение изначально false
+цикл while не выполняет своё тело тогда как do-while выполняет своё тело хотя бы 1 раз при любых
+условиях. Он всегда возвращяет void и является нечистым. Вот его синтаксис:
+```
+do <expr> while (<expr>)
+```
+
+#### Цикл for-each
+Цикл for-each пробегается по каждому объекту в итераторе и распаковывает его в переменную.
+Всегда возвращяет void и является нечистым.
+Вот его синтаксис:
+```
+for (let <var_name::var_type> : <iterable_name>) <expr>
+```
+
+### Список выражений
+Список выражений нужен для последовательного выполнения нескольких выражений
+внутри себя. Он возвращяет последнее выражение внутри себя. Всегда является нечистым.
+Вот его синтаксис:
+```
+{ <expr...> }
+```
+
+## Переменные внутри нечистых функций
+Если в нечистой функции объявить список выражений в нём можно
+создавать переменные которые так же могут быть неконстантными.
+Делается это с помощю ключегово слова let, что бы сделать переменную
+мутабельной необходимо после него добавить mut.
+
+Пример:
+```
+impure test x::i32 -> void = {
+    let a::i32 = x * 2;
+    let mut b::i32 = a;
+    b = b * 2;
+};
+```
+
+# Библиотека core
+Библиотека core определяет базовые операторы, типы, итераторы, числа
+и требуется для нормальной работы языка. Каждый модуль обязан инклюдить core
+то есть в начале любого модуля автоматически должно стоять:
+```
+include @import("core");
+```
+
+Библиотека core состоит из следующих определений:
+- Базовые числовые типы и операторы для них
+- Некоторые дополнительные функции
+- Типы и операторы для работы с указателями
+- Типы для работы с языком си
+- Библиотека для работы с итераторами
+
+## Базовые числовые типы
+Базовые числовые типы объявлены в корне библиотеки,
+должны быть определены следующие типы:
+- u8, u16, u32, u64
+- i8, i16, i32, i64
+- f32, f64
+- bool
+
+Их определения могут вылгядеть так:
+```
+export constexpr u8 -> type = @u(8);
+export constexpr u16 -> type = @u(16);
+export constexpr u32 -> type = @u(32);
+export constexpr u64 -> type = @u(64);
+
+export constexpr i8 -> type = @i(8);
+export constexpr i16 -> type = @i(16);
+export constexpr i32 -> type = @i(32);
+export constexpr i64 -> type = @i(64);
+
+export constexpr f32 -> type = @f(32);
+export constexpr f64 -> type = @f(64);
+
+export constexpr bool -> type = @u(1);
+```
+
+Так же для типов u* i* f* должны быть определены следующие операторы:
+- `+`
+- `-`
+- `*`
+- `/`
+- `==`
+- `<`
+- `>`
+- `>=`
+- `<=`
+
+Вот как могут выглядеть их определения:
+```
+export operator + a::u8 b::u8 -> u8 = @add(u8);
+export operator + a::u16 b::u16 -> u16 = @add(u16);
+export operator + a::u32 b::u32 -> u32 = @add(u32);
+export operator + a::u64 b::u64 -> u64 = @add(u64);
+
+export operator + a::i8 b::i8 -> i8 = @add(i8);
+export operator + a::i16 b::i16 -> i16 = @add(i16);
+export operator + a::i32 b::i32 -> i32 = @add(i32);
+export operator + a::i64 b::i64 -> i64 = @add(i64);
+
+export operator - a::u8 b::u8 -> u8 = @sub(u8);
+export operator - a::u16 b::u16 -> u16 = @sub(u16);
+export operator - a::u32 b::u32 -> u32 = @sub(u32);
+export operator - a::u64 b::u64 -> u64 = @sub(u64);
+
+export operator - a::i8 b::i8 -> i8 = @sub(i8);
+export operator - a::i16 b::i16 -> i16 = @sub(i16);
+export operator - a::i32 b::i32 -> i32 = @sub(i32);
+export operator - a::i64 b::i64 -> i64 = @sub(i64);
+
+export operator * a::u8 b::u8 -> u8 = @mul(u8);
+export operator * a::u16 b::u16 -> u16 = @mul(u16);
+export operator * a::u32 b::u32 -> u32 = @mul(u32);
+export operator * a::u64 b::u64 -> u64 = @mul(u64);
+
+export operator * a::i8 b::i8 -> i8 = @mul(i8);
+export operator * a::i16 b::i16 -> i16 = @mul(i16);
+export operator * a::i32 b::i32 -> i32 = @mul(i32);
+export operator * a::i64 b::i64 -> i64 = @mul(i64);
+
+export operator / a::u8 b::u8 -> u8 = @div(u8);
+export operator / a::u16 b::u16 -> u16 = @div(u16);
+export operator / a::u32 b::u32 -> u32 = @div(u32);
+export operator / a::u64 b::u64 -> u64 = @div(u64);
+
+export operator / a::i8 b::i8 -> i8 = @div(i8);
+export operator / a::i16 b::i16 -> i16 = @div(i16);
+export operator / a::i32 b::i32 -> i32 = @div(i32);
+export operator / a::i64 b::i64 -> i64 = @div(i64);
+
+export operator == a::u8 b::u8 -> bool = @equals(u8);
+export operator == a::u16 b::u16 -> bool = @equals(u16);
+export operator == a::u32 b::u32 -> bool = @equals(u32);
+export operator == a::u64 b::u64 -> bool = @equals(u64);
+
+export operator == a::i8 b::i8 -> bool = @equals(i8);
+export operator == a::i16 b::i16 -> bool = @equals(i16);
+export operator == a::i32 b::i32 -> bool = @equals(i32);
+export operator == a::i64 b::i64 -> bool = @equals(i64);
+
+export operator != a::u8 b::u8 -> bool = !@equals(u8)(a, b);
+export operator != a::u16 b::u16 -> bool = !@equals(u16)(a, b);
+export operator != a::u32 b::u32 -> bool = !@equals(u32)(a, b);
+export operator != a::u64 b::u64 -> bool = !@equals(u64)(a, b);
+
+export operator != a::i8 b::i8 -> bool = !@equals(i8)(a, b);
+export operator != a::i16 b::i16 -> bool = !@equals(i16)(a, b);
+export operator != a::i32 b::i32 -> bool = !@equals(i32)(a, b);
+export operator != a::i64 b::i64 -> bool = !@equals(i64)(a, b);
+
+export operator < a::u8 b::u8 -> bool = @less(u8);
+export operator < a::u16 b::u16 -> bool = @less(u16);
+export operator < a::u32 b::u32 -> bool = @less(u32);
+export operator < a::u64 b::u64 -> bool = @less(u64);
+
+export operator < a::i8 b::i8 -> bool = @less(i8);
+export operator < a::i16 b::i16 -> bool = @less(i16);
+export operator < a::i32 b::i32 -> bool = @less(i32);
+export operator < a::i64 b::i64 -> bool = @less(i64);
+
+export operator <= a::u8 b::u8 -> bool = @less(u8)(a, b) || a == b;
+export operator <= a::u16 b::u16 -> bool = @less(u16)(a, b) || a == b;
+export operator <= a::u32 b::u32 -> bool = @less(u32)(a, b) || a == b;
+export operator <= a::u64 b::u64 -> bool = @less(u64)(a, b) || a == b;
+
+export operator <= a::i8 b::i8 -> bool = @less(i8)(a, b) || a == b;
+export operator <= a::i16 b::i16 -> bool = @less(i16)(a, b) || a == b;
+export operator <= a::i32 b::i32 -> bool = @less(i32)(a, b) || a == b;
+export operator <= a::i64 b::i64 -> bool = @less(i64)(a, b) || a == b;
+
+export operator >= a::u8 b::u8 -> bool = @greater(u8)(a, b) || a == b;
+export operator >= a::u16 b::u16 -> bool = @greater(u16)(a, b) || a == b;
+export operator >= a::u32 b::u32 -> bool = @greater(u32)(a, b) || a == b;
+export operator >= a::u64 b::u64 -> bool = @greater(u64)(a, b) || a == b;
+
+export operator >= a::i8 b::i8 -> bool = @greater(i8)(a, b) || a == b;
+export operator >= a::i16 b::i16 -> bool = @greater(i16)(a, b) || a == b;
+export operator >= a::i32 b::i32 -> bool = @greater(i32)(a, b) || a == b;
+export operator >= a::i64 b::i64 -> bool = @greater(i64)(a, b) || a == b;
+```
+
+Для типа bool необходимо определить следующие операторы:
+- `!`
+- `&&`
+- `||`
+
+Вот как могут выглядеть их определения:
+```
+export loperator ! a::bool -> bool = @not;
+export operator && a::bool b::bool -> bool = @and;
+export operator || a::bool b::bool -> bool = @or;
+```
+
+## Некоторые дополнительные функции
+Библиотека также должна дополнительно определить:
+- Темплейт ограничение same_as
+- Оператор сравнения для типа типов
+
+### Темплейт ограничение same_as
+Это ограничение принимает на вход темплейта тип и возвращяет ограничение которое
+сравнивает равен ли тип который нужно ограничить типу который был передан в same_as.
+Это можно определить как:
+```
+export constexpr same_as T::type -> constexpr fn(Y::type -> bool) =
+    (constexpr Y::type -> bool | T == Y);
+```
+
+### Оператор сравнения для типа типов
+Просто определение оператора `==` для типа типов:
+```
+export constexpr operator == a::type b::type -> bool = @equals(type);
+```
+
+## Типы и определения для указателей
+В библиотеке core должны быть объявлен оператор который позволит быстро создавать
+типы ссылок из обычных типов. Он должен иметь примерно следующее определение:
+```
+export constexpr roperator * T::type -> type(@ptrable) = @ptr;
+```
+
+## Типы для языка си
+Типы для языка си должны экспортироватся через модуль c_type,
+требуются следующие типы:
+- c_type.uchar
+- c_type.schar
+- c_type.ushort
+- c_type.sshort
+- c_type.uint
+- c_type.sint
+- c_type.ulong
+- c_type.slong
+- c_type.ulonglong
+- c_type.slonglong
+- c_type.float
+- c_type.double
+- c_type.void_ptr
+
+Вот как могут выглядить их определения (для архитектуры x86-64):
+```
+export constexpr uchar -> type = u8;
+export constexpr schar -> type = i8;
+
+export constexpr ushort -> type = u16;
+export constexpr sshort -> type = i16;
+
+export constexpr uint -> type = u32;
+export constexpr sint -> type = i32;
+
+export constexpr ulong -> type = u32;
+export constexpr slong -> type = i32;
+
+export constexpr ulonglong -> type = u64;
+export constexpr slonglong -> type = i64;
+
+export constexpr float -> type = f32;
+export constexpr double -> type = f64;
+
+export constexpr void_ptr -> type = void*;
+```
+
+## Итераторы
+Библиотека итераторов содержится в экспортированном модуле iter.
+
+Итерируемый тип это такой тип, для которого определены 2 перегрузки функци:
+функция begin и функция end, они в свою очередь должны вернуть объект который поддерживает
+оператор `==`, `++` и оператор `*`.
+- Оператор `==` сравнивает 2 итератора
+- Оператор `++` заставляет итератор переместится к следующему элементу
+- Оператор `*` получает текущий объект на который указывает итератор
+
+Модуль iter должен определить 2 ограничения:
+- iterable - ограничение которое требует наличия методов begin и end
+- iterator - ограничение которое требует наличия операторов `==`, `++`, `*`
+
+### Ограничение iterable
+Ограничение может быть объявлено следующим образом:
+```
+export constexpr iterable T::type -> bool = check (T x) {
+    { begin(x) } -> (iter.iterator),
+    { end(x) } -> (iter.iterator),
+};
+```
+
+### Ограничение iterator
+Ограничение может быть объявлено следующим образом:
+```
+export constexpr iterator T::type -> bool = check (T x) {
+    { x == x } -> (same_as(bool)),
+    { x++ } -> (same_as(T)),
+    { *x } -> (),
+};
+```
+
+Пример собственного итератора:
+```
+constexpr iota -> type(iter.iterable) = struct {
+    start::i32,
+    end::i32,
+};
+
+constexpr iota_iter -> type(iter.iterator) = struct {
+    ptr::i32,
+};
+
+operator == a::iota_iter b::iota_iter -> bool = a.ptr == b.ptr;
+roperator ++ x::iota_iter -> iota_iter = iota_iter(x.ptr + 1);
+loperator * x::iota_iter -> i32 = x.ptr;
+
+begin x::iota -> iota_iter = iota_iter(x.start);
+end x::iota -> iota_iter = iota_iter(x.end);
+
+...
+
+for (let i::i32 : iota(0, 10))
+    std.println("i = {}", i);
 ```
